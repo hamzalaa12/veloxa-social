@@ -22,7 +22,8 @@ export const Header: React.FC<HeaderProps> = ({ onViewChange, activeView, onUser
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
-      subscribeToNotifications();
+      const cleanup = subscribeToNotifications();
+      return cleanup;
     }
   }, [user]);
 
@@ -181,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({ onViewChange, activeView, onUser
 
       {/* Enhanced Notifications Modal */}
       {showNotifications && (
-        <EnhancedNotifications onClose={() => setShowNotifications(false)} />
+        <EnhancedNotifications />
       )}
     </>
   );
