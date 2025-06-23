@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { ForgotPassword } from '@/components/ForgotPassword';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -12,6 +12,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
@@ -150,6 +151,18 @@ const Auth = () => {
             </div>
           </div>
 
+          {!isSignUp && (
+            <div className="text-left">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-purple-600 hover:text-purple-800 hover:underline"
+              >
+                نسيت كلمة المرور؟
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -175,6 +188,11 @@ const Auth = () => {
           </button>
         </div>
       </div>
+
+      <ForgotPassword 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 };
