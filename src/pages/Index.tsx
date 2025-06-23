@@ -9,6 +9,7 @@ import { ProfilePanel } from '../components/ProfilePanel';
 import { MessagingPanel } from '../components/MessagingPanel';
 import { ProfileSetup } from '../components/ProfileSetup';
 import { supabase } from '@/integrations/supabase/client';
+import { usePosts } from '../hooks/usePosts';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('feed');
@@ -16,6 +17,7 @@ const Index = () => {
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   const [profileCheckLoading, setProfileCheckLoading] = useState(true);
   const { user, loading } = useAuth();
+  const { toggleLike } = usePosts();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,10 +46,8 @@ const Index = () => {
 
       if (error) {
         console.error('Error checking profile setup:', error);
-        // If profile doesn't exist, user needs to set it up
         setNeedsProfileSetup(true);
       } else if (!data.username || !data.full_name) {
-        // Check if profile needs setup (missing username or full_name)
         setNeedsProfileSetup(true);
       }
     } catch (error) {
@@ -62,6 +62,11 @@ const Index = () => {
     setNeedsProfileSetup(false);
   };
 
+  const handleUserClick = (clickedUser: any) => {
+    setSelectedUser(clickedUser);
+    setActiveView('profile');
+  };
+
   if (loading || profileCheckLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -73,20 +78,30 @@ const Index = () => {
     );
   }
 
-  // Show profile setup if user needs to complete their profile
   if (user && needsProfileSetup) {
     return <ProfileSetup onComplete={handleProfileSetupComplete} />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header onViewChange={setActiveView} activeView={activeView} />
+      <Header 
+        onViewChange={setActiveView} 
+        activeView={activeView} 
+        onUserClick={handleUserClick}
+      />
       
       <div className="flex max-w-7xl mx-auto pt-16">
-        {user && <Sidebar onViewChange={setActiveView} activeView={activeView} />}
+        {user && (
+          <Sidebar 
+            onViewChange={setActiveView} 
+            activeView={activeView}
+            onProfileClick={handleUserClick}
+            onLike={toggleLike}
+          />
+        )}
         
         <main className="flex-1 px-4 py-6">
-          {activeView === 'feed' && <Feed onProfileClick={setSelectedUser} />}
+          {activeView === 'feed' && <Feed onProfileClick={handleUserClick} />}
           {activeView === 'profile' && user && <ProfilePanel selectedUser={selectedUser} />}
           {activeView === 'messages' && user && <MessagingPanel />}
         </main>

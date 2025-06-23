@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PostCard } from './PostCard';
 import { CreatePost } from './CreatePost';
+import { Stories } from './Stories';
+import { PostSharing } from './PostSharing';
 import { usePosts } from '../hooks/usePosts';
 import { useAuth } from '../hooks/useAuth';
 
@@ -12,6 +14,11 @@ interface FeedProps {
 export const Feed: React.FC<FeedProps> = ({ onProfileClick }) => {
   const { posts, loading, createPost, toggleLike } = usePosts();
   const { user } = useAuth();
+  const [sharePostId, setSharePostId] = useState<string | null>(null);
+
+  const handleShare = (postId: string) => {
+    setSharePostId(postId);
+  };
 
   if (loading) {
     return (
@@ -37,6 +44,9 @@ export const Feed: React.FC<FeedProps> = ({ onProfileClick }) => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Stories Section */}
+      <Stories />
+      
       {user && <CreatePost onPost={createPost} />}
       
       {posts.length === 0 ? (
@@ -63,9 +73,18 @@ export const Feed: React.FC<FeedProps> = ({ onProfileClick }) => {
               liked: post.user_liked || false
             }}
             onLike={() => toggleLike(post.id)}
+            onShare={() => handleShare(post.id)}
             onProfileClick={onProfileClick}
           />
         ))
+      )}
+
+      {/* Post Sharing Modal */}
+      {sharePostId && (
+        <PostSharing
+          postId={sharePostId}
+          onClose={() => setSharePostId(null)}
+        />
       )}
     </div>
   );

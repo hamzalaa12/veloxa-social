@@ -1,13 +1,16 @@
 
 import React from 'react';
-import { Users, User, Heart } from 'lucide-react';
+import { Users, TrendingUp, Search } from 'lucide-react';
+import { TrendingPosts } from './TrendingPosts';
 
 interface SidebarProps {
   onViewChange: (view: string) => void;
   activeView: string;
+  onProfileClick: (user: any) => void;
+  onLike: (postId: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onViewChange, activeView }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onViewChange, activeView, onProfileClick, onLike }) => {
   const suggestions = [
     { id: 1, name: 'Emma Wilson', username: '@emmaw', followers: '2.4k', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b587?w=150&h=150&fit=crop&crop=face' },
     { id: 2, name: 'Alex Johnson', username: '@alexj', followers: '1.8k', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' },
@@ -15,8 +18,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onViewChange, activeView }) =>
   ];
 
   return (
-    <aside className="w-80 p-6 hidden lg:block">
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+    <aside className="w-80 p-6 hidden lg:block space-y-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6">
         <div className="flex items-center space-x-4 mb-6">
           <img
             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
@@ -37,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onViewChange, activeView }) =>
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h4 className="font-semibold text-lg mb-4 flex items-center">
           <Users className="w-5 h-5 mr-2 text-purple-600" />
-          Suggested for you
+          اقتراحات المتابعة
         </h4>
         <div className="space-y-4">
           {suggestions.map((user) => (
@@ -55,12 +58,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onViewChange, activeView }) =>
                 </div>
               </div>
               <button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-600 hover:to-blue-600 transition-all duration-200 transform hover:scale-105">
-                Follow
+                متابعة
               </button>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Trending Posts Section */}
+      <TrendingPosts onProfileClick={onProfileClick} onLike={onLike} />
     </aside>
   );
 };

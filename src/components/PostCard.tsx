@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Heart, MessageSquare, Share, User } from 'lucide-react';
 
 interface Post {
-  id: string; // Changed from number to string to match Supabase UUIDs
+  id: string;
   user: {
     name: string;
     username: string;
@@ -19,11 +19,12 @@ interface Post {
 
 interface PostCardProps {
   post: Post;
-  onLike: (postId: string) => void; // Changed from number to string
+  onLike: (postId: string) => void;
+  onShare?: (postId: string) => void;
   onProfileClick: (user: any) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onProfileClick }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onProfileClick }) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
 
@@ -86,9 +87,14 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onProfileClick
               <span className="font-medium">{post.comments}</span>
             </button>
 
-            <button className="flex items-center space-x-2 text-gray-600 hover:text-green-500 transition-colors duration-200 transform hover:scale-110">
-              <Share className="w-6 h-6" />
-            </button>
+            {onShare && (
+              <button
+                onClick={() => onShare(post.id)}
+                className="flex items-center space-x-2 text-gray-600 hover:text-green-500 transition-colors duration-200 transform hover:scale-110"
+              >
+                <Share className="w-6 h-6" />
+              </button>
+            )}
           </div>
         </div>
 
