@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Heart, MessageSquare, Share, User } from 'lucide-react';
 
@@ -26,9 +27,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onProfileClick
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
 
+  // Hardcoded comments for now - this would come from the database in a real app
   const comments = [
-    { id: 1, user: 'Mike Chen', content: 'Amazing shot! 📸', timeAgo: '1h' },
-    { id: 2, user: 'Lisa Park', content: 'Looks incredible! Where is this?', timeAgo: '45m' },
+    { id: 1, user: 'أحمد محمد', content: 'صورة رائعة! 📸', timeAgo: '1س' },
+    { id: 2, user: 'فاطمة علي', content: 'يبدو مذهلاً! أين هذا المكان؟', timeAgo: '45د' },
   ];
 
   return (
@@ -118,11 +120,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onProfileClick
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
+                  placeholder="اكتب تعليقاً..."
                   className="flex-1 px-4 py-2 bg-gray-50 rounded-lg border-0 focus:ring-2 focus:ring-purple-500 outline-none"
                 />
                 <button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200">
-                  Post
+                  نشر
                 </button>
               </div>
             </div>

@@ -27,6 +27,8 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       checkProfileSetup();
+    } else {
+      setProfileCheckLoading(false);
     }
   }, [user]);
 
@@ -40,10 +42,12 @@ const Index = () => {
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
-
-      // Check if profile needs setup (missing username or full_name)
-      if (!data.username || !data.full_name) {
+      if (error) {
+        console.error('Error checking profile setup:', error);
+        // If profile doesn't exist, user needs to set it up
+        setNeedsProfileSetup(true);
+      } else if (!data.username || !data.full_name) {
+        // Check if profile needs setup (missing username or full_name)
         setNeedsProfileSetup(true);
       }
     } catch (error) {
