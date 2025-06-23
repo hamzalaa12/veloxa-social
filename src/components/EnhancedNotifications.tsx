@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bell, Heart, MessageSquare, UserPlus, Share, X, Check } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Bell, BellRing, X, Heart, MessageCircle, UserPlus, Eye } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
@@ -20,20 +20,33 @@ interface Notification {
   };
 }
 
-interface EnhancedNotificationsProps {
-  onClose: () => void;
-}
-
-export const EnhancedNotifications: React.FC<EnhancedNotificationsProps> = ({ onClose }) => {
+export const EnhancedNotifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      subscribeToNotifications();
+      // Set up real-time subscription
+      const subscription = supabase
+        .channel('notifications')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        }, (payload) => {
+          console.log('Notification change received:', payload);
+          fetchNotifications();
+        })
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [user]);
 
@@ -53,46 +66,15 @@ export const EnhancedNotifications: React.FC<EnhancedNotificationsProps> = ({ on
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
 
       if (error) throw error;
+
       setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.read).length || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const subscribeToNotifications = () => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          
-          // Show toast for new notification
-          toast({
-            title: "إشعار جديد",
-            description: getNotificationMessage(newNotification),
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -104,13 +86,10 @@ export const EnhancedNotifications: React.FC<EnhancedNotificationsProps> = ({ on
 
       if (error) throw error;
 
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
-            ? { ...notif, read: true }
-            : notif
-        )
-      );
+      setNotifications(notifications.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -128,172 +107,133 @@ export const EnhancedNotifications: React.FC<EnhancedNotificationsProps> = ({ on
 
       if (error) throw error;
 
-      setNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
-      );
-
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
       toast({
-        title: "تم تحديد جميع الإشعارات كمقروءة",
+        title: "تم وضع علامة على جميع الإشعارات كمقروءة",
       });
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   };
 
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
-
-      if (error) throw error;
-
-      setNotifications(prev => 
-        prev.filter(notif => notif.id !== notificationId)
-      );
-    } catch (error) {
-      console.error('Error deleting notification:', error);
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'like':
+        return <Heart className="w-4 h-4 text-red-500" />;
+      case 'comment':
+        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+      case 'follow':
+        return <UserPlus className="w-4 h-4 text-green-500" />;
+      default:
+        return <Bell className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getNotificationMessage = (notification: Notification) => {
-    const userName = notification.from_profiles?.full_name || notification.from_profiles?.username || 'مستخدم';
+    const fromUser = notification.from_profiles?.full_name || notification.from_profiles?.username || 'مستخدم';
     
     switch (notification.type) {
       case 'like':
-        return `${userName} أعجب بمنشورك`;
+        return `${fromUser} أعجب بمنشورك`;
       case 'comment':
-        return `${userName} علق على منشورك`;
+        return `${fromUser} علق على منشورك`;
       case 'follow':
-        return `${userName} بدأ بمتابعتك`;
-      case 'share':
-        return `${userName} شارك منشورك`;
+        return `${fromUser} بدأ في متابعتك`;
       default:
         return notification.message || 'إشعار جديد';
     }
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'like':
-        return <Heart className="w-5 h-5 text-red-500" />;
-      case 'comment':
-        return <MessageSquare className="w-5 h-5 text-blue-500" />;
-      case 'follow':
-        return <UserPlus className="w-5 h-5 text-green-500" />;
-      case 'share':
-        return <Share className="w-5 h-5 text-purple-500" />;
-      default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  if (!user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] mx-4 flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center space-x-2">
-            <Bell className="w-6 h-6 text-purple-600" />
-            <h2 className="text-xl font-semibold">الإشعارات</h2>
-            {unreadCount > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            {unreadCount > 0 && (
+    <div className="relative">
+      <button
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="relative p-2 text-gray-600 hover:text-purple-600 transition-colors duration-200"
+      >
+        {unreadCount > 0 ? (
+          <BellRing className="w-6 h-6" />
+        ) : (
+          <Bell className="w-6 h-6" />
+        )}
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {showNotifications && (
+        <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">الإشعارات</h3>
+            <div className="flex items-center space-x-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-purple-600 hover:text-purple-700"
+                >
+                  وضع علامة على الكل كمقروء
+                </button>
+              )}
               <button
-                onClick={markAllAsRead}
-                className="text-purple-600 hover:text-purple-700 text-sm"
+                onClick={() => setShowNotifications(false)}
+                className="text-gray-500 hover:text-gray-700"
               >
-                تحديد الكل كمقروء
+                <X className="w-4 h-4" />
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="p-6 text-center">
-              <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto"></div>
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="p-12 text-center">
-              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">لا توجد إشعارات</p>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
-                  !notification.read ? 'bg-purple-50' : ''
-                }`}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    {notification.from_profiles?.avatar_url ? (
-                      <img
-                        src={notification.from_profiles.avatar_url}
-                        alt={notification.from_profiles.full_name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">
-                      {getNotificationMessage(notification)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(notification.created_at).toLocaleDateString('ar', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-1">
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>لا توجد إشعارات حتى الآن</p>
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
+                    !notification.read ? 'bg-purple-50' : ''
+                  }`}
+                  onClick={() => markAsRead(notification.id)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {notification.from_profiles?.avatar_url ? (
+                        <img
+                          src={notification.from_profiles.avatar_url}
+                          alt={notification.from_profiles.full_name}
+                          className="w-8 h-8 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">
+                        {getNotificationMessage(notification)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(notification.created_at).toLocaleDateString('ar')}
+                      </p>
+                    </div>
                     {!notification.read && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="text-purple-600 hover:text-purple-700"
-                        title="تحديد كمقروء"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
                     )}
-                    <button
-                      onClick={() => deleteNotification(notification.id)}
-                      className="text-gray-400 hover:text-red-500"
-                      title="حذف الإشعار"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
