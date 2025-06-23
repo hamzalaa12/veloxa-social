@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Heart, MessageSquare, Share, User } from 'lucide-react';
 
 interface Post {
-  id: number;
+  id: string; // Changed from number to string to match Supabase UUIDs
   user: {
     name: string;
     username: string;
@@ -19,7 +18,7 @@ interface Post {
 
 interface PostCardProps {
   post: Post;
-  onLike: (postId: number) => void;
+  onLike: (postId: string) => void; // Changed from number to string
   onProfileClick: (user: any) => void;
 }
 
