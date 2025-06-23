@@ -45,7 +45,7 @@ export const EnhancedNotifications: React.FC<EnhancedNotificationsProps> = ({ on
         .from('notifications')
         .select(`
           *,
-          from_profiles:from_user_id (
+          from_profiles:profiles!notifications_from_user_id_fkey (
             username,
             full_name,
             avatar_url
