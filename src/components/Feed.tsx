@@ -57,8 +57,8 @@ export const Feed: React.FC<FeedProps> = ({ onProfileClick }) => {
               },
               content: post.content,
               image: post.image_url,
-              likes: post.likes_count,
-              comments: post.comments_count,
+              likes: post.likes_count || 0,
+              comments: post.comments_count || 0,
               timeAgo: new Date(post.created_at).toLocaleDateString('ar'),
               liked: post.user_liked || false
             }}
