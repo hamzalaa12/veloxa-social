@@ -56,8 +56,8 @@ export const useMessages = () => {
         .from('messages')
         .select(`
           *,
-          sender:sender_id (id, username, full_name, avatar_url),
-          receiver:receiver_id (id, username, full_name, avatar_url)
+          sender:profiles!messages_sender_id_fkey (id, username, full_name, avatar_url),
+          receiver:profiles!messages_receiver_id_fkey (id, username, full_name, avatar_url)
         `)
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
@@ -102,8 +102,8 @@ export const useMessages = () => {
         .from('messages')
         .select(`
           *,
-          sender:sender_id (username, full_name, avatar_url),
-          receiver:receiver_id (username, full_name, avatar_url)
+          sender:profiles!messages_sender_id_fkey (username, full_name, avatar_url),
+          receiver:profiles!messages_receiver_id_fkey (username, full_name, avatar_url)
         `)
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });

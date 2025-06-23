@@ -42,8 +42,8 @@ export const useNotifications = () => {
           created_at,
           post_id,
           user_id,
-          profiles:user_id (username, full_name, avatar_url),
-          posts:post_id (user_id)
+          profiles!likes_user_id_fkey (username, full_name, avatar_url),
+          posts!likes_post_id_fkey (user_id)
         `)
         .neq('user_id', user.id);
 
@@ -55,7 +55,7 @@ export const useNotifications = () => {
           id,
           created_at,
           follower_id,
-          profiles:follower_id (username, full_name, avatar_url)
+          profiles!follows_follower_id_fkey (username, full_name, avatar_url)
         `)
         .eq('following_id', user.id);
 
