@@ -162,6 +162,61 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          from_user_id: string | null
+          id: string
+          message: string | null
+          post_id: string | null
+          read: boolean | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string
+          message?: string | null
+          post_id?: string | null
+          read?: boolean | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string
+          message?: string | null
+          post_id?: string | null
+          read?: boolean | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments_count: number | null
@@ -207,38 +262,59 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          cover_url: string | null
           created_at: string | null
+          email_verified: boolean | null
           followers_count: number | null
           following_count: number | null
           full_name: string | null
           id: string
+          phone: string | null
+          phone_verified: boolean | null
           posts_count: number | null
+          profile_completed: boolean | null
           updated_at: string | null
           username: string | null
+          verification_code: string | null
+          verification_code_expires_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string | null
+          email_verified?: boolean | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
           id: string
+          phone?: string | null
+          phone_verified?: boolean | null
           posts_count?: number | null
+          profile_completed?: boolean | null
           updated_at?: string | null
           username?: string | null
+          verification_code?: string | null
+          verification_code_expires_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string | null
+          email_verified?: boolean | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
           id?: string
+          phone?: string | null
+          phone_verified?: boolean | null
           posts_count?: number | null
+          profile_completed?: boolean | null
           updated_at?: string | null
           username?: string | null
+          verification_code?: string | null
+          verification_code_expires_at?: string | null
         }
         Relationships: []
       }
