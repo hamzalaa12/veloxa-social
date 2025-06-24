@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -40,6 +39,7 @@ export const useMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -155,6 +155,66 @@ export const useMessages = () => {
     }
   };
 
+  const startNewConversation = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      // Check if conversation already exists
+      const existingConversation = conversations.find(conv => conv.user.id === userId);
+      if (existingConversation) {
+        setSelectedConversationId(userId);
+        await fetchMessages(userId);
+        return;
+      }
+
+      // Fetch user profile for new conversation
+      const { data: userProfile, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      // Create empty conversation locally until first message is sent
+      const newConversation: Conversation = {
+        user: userProfile,
+        lastMessage: {
+          id: 'temp',
+          content: 'بدء محادثة جديدة',
+          sender_id: user.id,
+          receiver_id: userId,
+          read: true,
+          created_at: new Date().toISOString(),
+          sender: {
+            username: user.user_metadata?.username || '',
+            full_name: user.user_metadata?.full_name || '',
+            avatar_url: user.user_metadata?.avatar_url
+          },
+          receiver: userProfile
+        },
+        unreadCount: 0
+      };
+
+      setConversations(prev => [newConversation, ...prev]);
+      setSelectedConversationId(userId);
+      setCurrentMessages([]);
+
+      toast({
+        title: "محادثة جديدة",
+        description: `تم بدء محادثة جديدة مع ${userProfile.full_name || userProfile.username}`,
+      });
+
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast({
+        title: "خطأ في بدء المحادثة",
+        description: "يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    }
+  };
+
   const subscribeToMessages = () => {
     if (!user) return;
 
@@ -179,8 +239,11 @@ export const useMessages = () => {
     conversations,
     currentMessages,
     loading,
+    selectedConversationId,
     fetchMessages,
     sendMessage,
+    startNewConversation,
+    setSelectedConversationId,
     refreshConversations: fetchConversations
   };
 };

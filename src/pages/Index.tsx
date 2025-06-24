@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +9,7 @@ import { MessagingPanel } from '../components/MessagingPanel';
 import { ProfileSetup } from '../components/ProfileSetup';
 import { supabase } from '@/integrations/supabase/client';
 import { usePosts } from '../hooks/usePosts';
+import { useMessages } from '../hooks/useMessages';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('feed');
@@ -18,6 +18,7 @@ const Index = () => {
   const [profileCheckLoading, setProfileCheckLoading] = useState(true);
   const { user, loading } = useAuth();
   const { toggleLike } = usePosts();
+  const { startNewConversation } = useMessages();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,6 +68,12 @@ const Index = () => {
     setActiveView('profile');
   };
 
+  const handleStartConversation = async (userId: string) => {
+    if (startNewConversation) {
+      await startNewConversation(userId);
+    }
+  };
+
   if (loading || profileCheckLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center">
@@ -109,7 +116,13 @@ const Index = () => {
         <main className="flex-1 px-6 py-8">
           <div className="max-w-4xl mx-auto">
             {activeView === 'feed' && <Feed onProfileClick={handleUserClick} />}
-            {activeView === 'profile' && user && <ProfilePanel selectedUser={selectedUser} />}
+            {activeView === 'profile' && user && (
+              <ProfilePanel 
+                selectedUser={selectedUser} 
+                onViewChange={setActiveView}
+                onStartConversation={handleStartConversation}
+              />
+            )}
             {activeView === 'messages' && user && <MessagingPanel />}
           </div>
         </main>
