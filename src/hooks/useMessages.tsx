@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -40,12 +41,21 @@ export const useMessages = () => {
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchConversations();
       subscribeToMessages();
     }
+
+    return () => {
+      // Clean up subscription when component unmounts or user changes
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [user]);
 
   const fetchConversations = async () => {
@@ -216,7 +226,7 @@ export const useMessages = () => {
   };
 
   const subscribeToMessages = () => {
-    if (!user) return;
+    if (!user || channelRef.current) return;
 
     const channel = supabase
       .channel('messages')
@@ -230,9 +240,7 @@ export const useMessages = () => {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    channelRef.current = channel;
   };
 
   return {

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, BellRing, X, Heart, MessageCircle, UserPlus, Eye, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,28 +27,41 @@ export const EnhancedNotifications: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const subscription = supabase
-        .channel('notifications')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('Notification change received:', payload);
-          fetchNotifications();
-        })
-        .subscribe();
-
-      return () => {
-        subscription.unsubscribe();
-      };
+      subscribeToNotifications();
     }
+
+    return () => {
+      // Clean up subscription when component unmounts or user changes
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+    };
   }, [user]);
+
+  const subscribeToNotifications = () => {
+    if (!user || subscriptionRef.current) return;
+
+    const subscription = supabase
+      .channel('notifications')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Notification change received:', payload);
+        fetchNotifications();
+      })
+      .subscribe();
+
+    subscriptionRef.current = subscription;
+  };
 
   const fetchNotifications = async () => {
     if (!user) return;
