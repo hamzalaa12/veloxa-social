@@ -69,10 +69,16 @@ const Index = () => {
 
   if (loading || profileCheckLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري التحميل...</p>
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-20 h-20 border-4 border-blue-500/20 border-b-blue-500 rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+            Veloxa
+          </h2>
+          <p className="text-gray-600 font-medium">جاري تحميل شبكة التواصل الذكية...</p>
         </div>
       </div>
     );
@@ -83,14 +89,14 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-blue-50/30 to-indigo-50/50">
       <Header 
         onViewChange={setActiveView} 
         activeView={activeView} 
         onUserClick={handleUserClick}
       />
       
-      <div className="flex max-w-7xl mx-auto pt-16">
+      <div className="flex max-w-7xl mx-auto pt-20">
         {user && (
           <Sidebar 
             onViewChange={setActiveView} 
@@ -100,10 +106,12 @@ const Index = () => {
           />
         )}
         
-        <main className="flex-1 px-4 py-6">
-          {activeView === 'feed' && <Feed onProfileClick={handleUserClick} />}
-          {activeView === 'profile' && user && <ProfilePanel selectedUser={selectedUser} />}
-          {activeView === 'messages' && user && <MessagingPanel />}
+        <main className="flex-1 px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            {activeView === 'feed' && <Feed onProfileClick={handleUserClick} />}
+            {activeView === 'profile' && user && <ProfilePanel selectedUser={selectedUser} />}
+            {activeView === 'messages' && user && <MessagingPanel />}
+          </div>
         </main>
       </div>
     </div>
