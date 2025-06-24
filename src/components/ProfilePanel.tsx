@@ -5,6 +5,7 @@ import { useFollow } from '../hooks/useFollow';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowModal } from './FollowModal';
 import { PostDetailModal } from './PostDetailModal';
+import { ProfileEditor } from './ProfileEditor';
 
 interface ProfilePanelProps {
   selectedUser?: any;
@@ -31,6 +32,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
   const [followModalType, setFollowModalType] = useState<'followers' | 'following'>('followers');
   const [postDetailModalOpen, setPostDetailModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -102,6 +104,11 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
     console.log('Navigate to user:', clickedUser);
   };
 
+  const handleProfileEditorComplete = () => {
+    setProfileEditorOpen(false);
+    fetchProfile(); // Refresh profile data after editing
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -171,7 +178,10 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
 
             {isOwnProfile && (
               <div className="mt-16">
-                <button className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors duration-200 flex items-center space-x-2">
+                <button 
+                  onClick={() => setProfileEditorOpen(true)}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors duration-200 flex items-center space-x-2"
+                >
                   <Settings className="w-4 h-4" />
                   <span>تعديل الملف الشخصي</span>
                 </button>
@@ -273,6 +283,12 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
           onProfileClick={handleUserClick}
         />
       )}
+
+      {/* Profile Editor Modal */}
+      <ProfileEditor 
+        isOpen={profileEditorOpen}
+        onClose={handleProfileEditorComplete}
+      />
     </div>
   );
 };
