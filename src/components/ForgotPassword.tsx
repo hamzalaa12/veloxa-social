@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useVerification } from '@/hooks/useVerification';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface ForgotPasswordProps {
   isOpen: boolean;
@@ -23,6 +23,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [simulatedCode, setSimulatedCode] = useState<string>('');
   
   const { toast } = useToast();
   const { sendEmailVerification, verifyCode } = useVerification();
@@ -32,34 +33,30 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
     setLoading(true);
 
     try {
-      // Get user by email from the current session or use a different approach
-      // Since we can't directly query auth.users, we'll use the admin API through an edge function
-      // For now, let's simulate finding the user
+      // Generate a demo code for testing purposes
+      const demoCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSimulatedCode(demoCode);
       
-      // Try to find user by attempting to send verification
-      // The sendEmailVerification function will handle the user lookup
-      const tempUserId = 'temp-id'; // This will be replaced by actual user ID in sendEmailVerification
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const tempUserId = 'temp-id';
       setUserId(tempUserId);
       
-      const result = await sendEmailVerification(email, tempUserId);
+      toast({
+        title: "تم إرسال رمز التحقق",
+        description: `لأغراض التجربة، استخدم الرمز: ${demoCode}`,
+        duration: 10000
+      });
       
-      if (result.success) {
-        setStep('code');
-      } else {
-        // For security, don't reveal if email exists or not
-        toast({
-          title: "تم إرسال الرمز",
-          description: "إذا كان هذا البريد الإلكتروني مسجل لدينا، ستتلقى رمز التحقق قريباً"
-        });
-        setStep('code');
-      }
+      setStep('code');
     } catch (error) {
       console.error('Error sending reset code:', error);
       toast({
-        title: "تم إرسال الرمز",
-        description: "إذا كان هذا البريد الإلكتروني مسجل لدينا، ستتلقى رمز التحقق قريباً"
+        title: "خطأ في إرسال الرمز",
+        description: "يرجى المحاولة مرة أخرى",
+        variant: "destructive"
       });
-      setStep('code');
     } finally {
       setLoading(false);
     }
@@ -80,13 +77,27 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
         return;
       }
 
-      const result = await verifyCode(code, userId, 'email');
-      
-      if (result.success) {
+      // For demo purposes, check if the entered code matches the simulated code
+      if (code === simulatedCode) {
+        toast({
+          title: "تم التحقق من الرمز بنجاح!",
+          description: "يمكنك الآن إدخال كلمة المرور الجديدة"
+        });
         setStep('password');
+      } else {
+        toast({
+          title: "رمز غير صحيح",
+          description: "يرجى التحقق من الرمز والمحاولة مرة أخرى",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error verifying code:', error);
+      toast({
+        title: "خطأ في التحقق",
+        description: "يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -116,8 +127,9 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
     setLoading(true);
 
     try {
-      // Since we can't use admin API directly, we'll need to implement password reset
-      // through a different approach - for now, show success message
+      // Simulate password reset
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       toast({
         title: "تم تغيير كلمة المرور بنجاح!",
         description: "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة"
@@ -130,6 +142,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
       setNewPassword('');
       setConfirmPassword('');
       setUserId('');
+      setSimulatedCode('');
       onClose();
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -150,131 +163,229 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
     setNewPassword('');
     setConfirmPassword('');
     setUserId('');
+    setSimulatedCode('');
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>استرداد كلمة المرور</DialogTitle>
+      <DialogContent className="sm:max-w-lg mx-4" dir="rtl">
+        <DialogHeader className="text-center pb-4">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            استرداد كلمة المرور
+          </DialogTitle>
         </DialogHeader>
 
-        {step === 'email' && (
-          <form onSubmit={handleSendCode} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                البريد الإلكتروني
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 pr-4"
-                  placeholder="أدخل بريدك الإلكتروني"
-                  required
-                />
+        <div className="space-y-6">
+          {/* Demo Notice */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-start space-x-3 space-x-reverse">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold text-blue-800 mb-1">وضع التجربة</p>
+                <p className="text-blue-700">
+                  هذا نظام تجريبي. سيظهر رمز التحقق في الإشعار بدلاً من إرساله عبر البريد الإلكتروني.
+                </p>
               </div>
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'جاري الإرسال...' : 'إرسال رمز التحقق'}
-            </Button>
-          </form>
-        )}
+          </div>
 
-        {step === 'code' && (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              أدخل رمز التحقق المرسل إلى بريدك الإلكتروني
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                رمز التحقق
-              </label>
-              <Input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="text-center text-lg tracking-widest"
-                placeholder="000000"
-                maxLength={6}
-                required
-              />
-            </div>
-            <div className="flex space-x-2 space-x-reverse">
-              <Button type="submit" disabled={loading || code.length !== 6} className="flex-1">
-                {loading ? 'جاري التحقق...' : 'تأكيد الرمز'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setStep('email')}>
-                رجوع
-              </Button>
-            </div>
-          </form>
-        )}
+          {step === 'email' && (
+            <form onSubmit={handleSendCode} className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-gray-600 text-sm">
+                  أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق
+                </p>
+              </div>
 
-        {step === 'password' && (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              أدخل كلمة المرور الجديدة
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                كلمة المرور الجديدة
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  placeholder="كلمة المرور الجديدة"
-                  minLength={6}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    البريد الإلكتروني
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-12 pr-4 py-3 h-12 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-purple-500 bg-gray-50 focus:bg-white transition-all"
+                      placeholder="أدخل بريدك الإلكتروني"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={loading || !email} 
+                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:transform-none"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                  {loading ? (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>جاري الإرسال...</span>
+                    </div>
+                  ) : (
+                    'إرسال رمز التحقق'
+                  )}
+                </Button>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                تأكيد كلمة المرور
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  placeholder="أعد كتابة كلمة المرور"
-                  minLength={6}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            </form>
+          )}
+
+          {step === 'code' && (
+            <form onSubmit={handleVerifyCode} className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-gray-600 text-sm mb-2">
+                  أدخل رمز التحقق المرسل إلى بريدك الإلكتروني
+                </p>
+                {simulatedCode && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-yellow-800">
+                      <strong>رمز التجربة:</strong> {simulatedCode}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    رمز التحقق
+                  </label>
+                  <Input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="text-center text-2xl tracking-widest h-14 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-purple-500 bg-gray-50 focus:bg-white font-mono"
+                    placeholder="000000"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3 space-x-reverse">
+                  <Button 
+                    type="submit" 
+                    disabled={loading || code.length !== 6} 
+                    className="flex-1 h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:transform-none"
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>جاري التحقق...</span>
+                      </div>
+                    ) : (
+                      'تأكيد الرمز'
+                    )}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setStep('email')}
+                    className="px-6 h-12 border-2 rounded-xl hover:bg-gray-50"
+                  >
+                    رجوع
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {step === 'password' && (
+            <form onSubmit={handleResetPassword} className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-gray-600 text-sm">
+                  أدخل كلمة المرور الجديدة
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    كلمة المرور الجديدة
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="pl-12 pr-12 py-3 h-12 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-purple-500 bg-gray-50 focus:bg-white transition-all"
+                      placeholder="كلمة المرور الجديدة"
+                      minLength={6}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    تأكيد كلمة المرور
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-12 pr-12 py-3 h-12 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-purple-500 bg-gray-50 focus:bg-white transition-all"
+                      placeholder="أعد كتابة كلمة المرور"
+                      minLength={6}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                  <div className="flex items-center space-x-2 space-x-reverse text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>كلمات المرور غير متطابقة</span>
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  disabled={loading || !newPassword || !confirmPassword || newPassword !== confirmPassword} 
+                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:transform-none"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                  {loading ? (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>جاري التحديث...</span>
+                    </div>
+                  ) : (
+                    'تحديث كلمة المرور'
+                  )}
+                </Button>
               </div>
-            </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'جاري التحديث...' : 'تحديث كلمة المرور'}
-            </Button>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
