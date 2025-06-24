@@ -1,6 +1,10 @@
 
 import React, { useState } from 'react';
 import { Heart, MessageSquare, Share, User } from 'lucide-react';
+import { useComments } from '../hooks/useComments';
+import { CommentItem } from './CommentItem';
+import { ActionDropdown } from './ActionDropdown';
+import { useAuth } from '../hooks/useAuth';
 
 interface Post {
   id: string;
@@ -27,12 +31,26 @@ interface PostCardProps {
 export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onProfileClick }) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const { user } = useAuth();
+  
+  const { comments, loading, createComment, updateComment, deleteComment } = useComments(post.id);
 
-  // Hardcoded comments for now - this would come from the database in a real app
-  const comments = [
-    { id: 1, user: 'أحمد محمد', content: 'صورة رائعة! 📸', timeAgo: '1س' },
-    { id: 2, user: 'فاطمة علي', content: 'يبدو مذهلاً! أين هذا المكان؟', timeAgo: '45د' },
-  ];
+  const handleSubmitComment = async () => {
+    if (newComment.trim()) {
+      await createComment(newComment.trim());
+      setNewComment('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitComment();
+    }
+  };
+
+  // Check if current user is the post owner (simplified check based on username)
+  const isPostOwner = user && post.user.username.includes(user.email?.split('@')[0] || '');
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
@@ -52,7 +70,16 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onPro
               <p className="text-gray-500 text-sm">{post.user.username}</p>
             </div>
           </div>
-          <span className="text-gray-400 text-sm">{post.timeAgo}</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-400 text-sm">{post.timeAgo}</span>
+            <ActionDropdown
+              isOwner={isPostOwner}
+              onEdit={() => console.log('Edit post')}
+              onDelete={() => console.log('Delete post')}
+              onShare={() => onShare?.(post.id)}
+              onReport={() => console.log('Report post')}
+            />
+          </div>
         </div>
 
         <p className="text-gray-800 mb-4 leading-relaxed">{post.content}</p>
@@ -84,7 +111,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onPro
               className="flex items-center space-x-2 text-gray-600 hover:text-blue-500 transition-colors duration-200 transform hover:scale-110"
             >
               <MessageSquare className="w-6 h-6" />
-              <span className="font-medium">{post.comments}</span>
+              <span className="font-medium">{comments.length}</span>
             </button>
 
             {onShare && (
@@ -100,40 +127,54 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onPro
 
         {showComments && (
           <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="space-y-3 mb-4">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="font-medium text-sm text-gray-900">{comment.user}</p>
-                      <p className="text-gray-700 text-sm">{comment.content}</p>
-                    </div>
-                    <span className="text-gray-400 text-xs ml-3">{comment.timeAgo}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Comments List */}
+            {loading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
+                <p className="text-gray-500 text-sm mt-2">جاري تحميل التعليقات...</p>
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-1 mb-4 max-h-80 overflow-y-auto">
+                {comments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    onUpdate={updateComment}
+                    onDelete={deleteComment}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm">لا توجد تعليقات بعد</p>
+              </div>
+            )}
 
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+            {/* Add Comment Form */}
+            {user && (
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 flex space-x-2">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="اكتب تعليقاً..."
+                    className="flex-1 px-4 py-2 bg-gray-50 rounded-lg border-0 focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                    rows={1}
+                  />
+                  <button 
+                    onClick={handleSubmitComment}
+                    disabled={!newComment.trim()}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    نشر
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 flex space-x-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="اكتب تعليقاً..."
-                  className="flex-1 px-4 py-2 bg-gray-50 rounded-lg border-0 focus:ring-2 focus:ring-purple-500 outline-none"
-                />
-                <button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200">
-                  نشر
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
