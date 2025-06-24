@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Heart, MessageSquare, User, Users, LogOut, Bell, Search, Settings, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { UserSearch } from './UserSearch';
 import { EnhancedNotifications } from './EnhancedNotifications';
-import { ProfileEditor } from './ProfileEditor';
 import { SiteSettings } from './SiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,7 +17,6 @@ export const Header: React.FC<HeaderProps> = ({ onViewChange, activeView, onUser
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showSiteSettings, setShowSiteSettings] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -163,14 +160,6 @@ export const Header: React.FC<HeaderProps> = ({ onViewChange, activeView, onUser
                 </button>
 
                 <button
-                  onClick={() => setShowProfileEditor(true)}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-600 hover:text-emerald-600 hover:bg-emerald-50/80 transition-all duration-300"
-                >
-                  <User className="w-5 h-5" />
-                  <span className="hidden md:block">تعديل الملف الشخصي</span>
-                </button>
-
-                <button
                   onClick={() => setShowSiteSettings(true)}
                   className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition-all duration-300"
                 >
@@ -214,12 +203,6 @@ export const Header: React.FC<HeaderProps> = ({ onViewChange, activeView, onUser
           </div>
         </div>
       )}
-
-      {/* Profile Editor Modal */}
-      <ProfileEditor 
-        isOpen={showProfileEditor}
-        onClose={() => setShowProfileEditor(false)}
-      />
 
       {/* Site Settings Modal */}
       <SiteSettings 
