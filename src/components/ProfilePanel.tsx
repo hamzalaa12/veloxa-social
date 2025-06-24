@@ -1,9 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, User, Users, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useFollow } from '../hooks/useFollow';
 import { supabase } from '@/integrations/supabase/client';
+import { FollowModal } from './FollowModal';
+import { PostDetailModal } from './PostDetailModal';
 
 interface ProfilePanelProps {
   selectedUser?: any;
@@ -26,6 +27,10 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followModalOpen, setFollowModalOpen] = useState(false);
+  const [followModalType, setFollowModalType] = useState<'followers' | 'following'>('followers');
+  const [postDetailModalOpen, setPostDetailModalOpen] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -65,8 +70,36 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
   };
 
   const handleStartConversation = () => {
-    // This would open the messaging panel with this user
     console.log('Start conversation with:', profile?.username);
+  };
+
+  const handleFollowersClick = () => {
+    setFollowModalType('followers');
+    setFollowModalOpen(true);
+  };
+
+  const handleFollowingClick = () => {
+    setFollowModalType('following');
+    setFollowModalOpen(true);
+  };
+
+  const handlePostClick = (postId: string) => {
+    setSelectedPostId(postId);
+    setPostDetailModalOpen(true);
+  };
+
+  const handleLike = () => {
+    // This would be handled by the post detail modal
+    console.log('Like post');
+  };
+
+  const handleShare = () => {
+    console.log('Share post');
+  };
+
+  const handleUserClick = (clickedUser: any) => {
+    // This would navigate to the clicked user's profile
+    console.log('Navigate to user:', clickedUser);
   };
 
   if (loading) {
@@ -159,13 +192,19 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
               <div className="text-2xl font-bold text-gray-900">{profile.posts_count || 0}</div>
               <div className="text-gray-600">المنشورات</div>
             </div>
-            <div>
+            <div 
+              className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+              onClick={handleFollowersClick}
+            >
               <div className="text-2xl font-bold text-gray-900">{profile.followers_count || 0}</div>
-              <div className="text-gray-600">المتابعون</div>
+              <div className="text-gray-600 hover:text-purple-600">المتابعون</div>
             </div>
-            <div>
+            <div 
+              className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+              onClick={handleFollowingClick}
+            >
               <div className="text-2xl font-bold text-gray-900">{profile.following_count || 0}</div>
-              <div className="text-gray-600">يتابع</div>
+              <div className="text-gray-600 hover:text-purple-600">يتابع</div>
             </div>
           </div>
         </div>
@@ -180,7 +219,11 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {userPosts.map((post) => (
-              <div key={post.id} className="relative group cursor-pointer">
+              <div 
+                key={post.id} 
+                className="relative group cursor-pointer"
+                onClick={() => handlePostClick(post.id)}
+              >
                 {post.image_url ? (
                   <img
                     src={post.image_url}
@@ -188,8 +231,8 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
                     className="w-full h-64 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <p className="text-gray-500 text-center p-4 line-clamp-3">{post.content}</p>
+                  <div className="w-full h-64 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center">
+                    <p className="text-gray-700 text-center p-4 line-clamp-3 font-medium">{post.content}</p>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 rounded-lg flex items-center justify-center">
@@ -209,6 +252,27 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ selectedUser }) => {
           </div>
         )}
       </div>
+
+      {/* Follow Modal */}
+      <FollowModal
+        isOpen={followModalOpen}
+        onClose={() => setFollowModalOpen(false)}
+        userId={profile.id}
+        type={followModalType}
+        onUserClick={handleUserClick}
+      />
+
+      {/* Post Detail Modal */}
+      {selectedPostId && (
+        <PostDetailModal
+          isOpen={postDetailModalOpen}
+          onClose={() => setPostDetailModalOpen(false)}
+          postId={selectedPostId}
+          onLike={handleLike}
+          onShare={handleShare}
+          onProfileClick={handleUserClick}
+        />
+      )}
     </div>
   );
 };
