@@ -114,6 +114,7 @@ const Index = () => {
             activeView={activeView}
             onProfileClick={handleUserClick}
             onLike={toggleLike}
+            showSuggestions={activeView === 'feed'}
           />
         )}
         
