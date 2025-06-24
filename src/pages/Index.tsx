@@ -16,9 +16,10 @@ const Index = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   const [profileCheckLoading, setProfileCheckLoading] = useState(true);
+  const [messageTargetUser, setMessageTargetUser] = useState(null);
   const { user, loading } = useAuth();
   const { toggleLike } = usePosts();
-  const { startNewConversation } = useMessages();
+  const { startNewConversation, setSelectedConversationId } = useMessages();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,9 +69,12 @@ const Index = () => {
     setActiveView('profile');
   };
 
-  const handleStartConversation = async (userId: string) => {
-    if (startNewConversation) {
+  const handleStartConversation = async (userId: string, targetUser?: any) => {
+    if (startNewConversation && setSelectedConversationId) {
       await startNewConversation(userId);
+      setSelectedConversationId(userId);
+      setMessageTargetUser(targetUser || selectedUser);
+      setActiveView('messages');
     }
   };
 
@@ -123,7 +127,12 @@ const Index = () => {
                 onStartConversation={handleStartConversation}
               />
             )}
-            {activeView === 'messages' && user && <MessagingPanel />}
+            {activeView === 'messages' && user && (
+              <MessagingPanel 
+                initialTargetUser={messageTargetUser}
+                onClearTarget={() => setMessageTargetUser(null)}
+              />
+            )}
           </div>
         </main>
       </div>

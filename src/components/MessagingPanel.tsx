@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, User, Phone, Video, Send, Smile, Paperclip, MoreVertical, Plus, Search } from 'lucide-react';
+import { MessageSquare, User, Phone, Video, Send, Smile, Paperclip, MoreVertical, Plus, Search, ArrowRight, X } from 'lucide-react';
 import { useMessages } from '../hooks/useMessages';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
-export const MessagingPanel: React.FC = () => {
+interface MessagingPanelProps {
+  initialTargetUser?: any;
+  onClearTarget?: () => void;
+}
+
+export const MessagingPanel: React.FC<MessagingPanelProps> = ({ 
+  initialTargetUser, 
+  onClearTarget 
+}) => {
   const { user } = useAuth();
   const { 
     conversations, 
@@ -22,18 +30,28 @@ export const MessagingPanel: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewConversation, setShowNewConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const selectedUser = conversations.find(conv => conv.user.id === selectedConversationId)?.user;
+  const selectedUser = conversations.find(conv => conv.user.id === selectedConversationId)?.user || initialTargetUser;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentMessages]);
 
+  useEffect(() => {
+    if (initialTargetUser && !loading) {
+      setSelectedConversationId(initialTargetUser.id);
+      fetchMessages(initialTargetUser.id);
+      setShowNewConversation(true);
+    }
+  }, [initialTargetUser, loading]);
+
   const handleSelectConversation = async (userId: string) => {
     setSelectedConversationId(userId);
     await fetchMessages(userId);
+    setShowNewConversation(false);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -44,6 +62,8 @@ export const MessagingPanel: React.FC = () => {
     try {
       await sendMessage(selectedConversationId, newMessage);
       setNewMessage('');
+      setShowNewConversation(false);
+      if (onClearTarget) onClearTarget();
     } finally {
       setSendingMessage(false);
     }
@@ -61,6 +81,12 @@ export const MessagingPanel: React.FC = () => {
       title: "مكالمة فيديو",
       description: "ميزة مكالمات الفيديو قيد التطوير...",
     });
+  };
+
+  const handleCloseNewConversation = () => {
+    setShowNewConversation(false);
+    setSelectedConversationId(null);
+    if (onClearTarget) onClearTarget();
   };
 
   const filteredConversations = conversations.filter(conv =>
@@ -117,7 +143,43 @@ export const MessagingPanel: React.FC = () => {
           </div>
           
           <ScrollArea className="h-full">
-            {filteredConversations.length === 0 ? (
+            {/* New conversation indicator */}
+            {showNewConversation && initialTargetUser && (
+              <div className="p-2">
+                <div className="p-4 m-2 rounded-2xl bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-2 border-purple-300/60 shadow-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full font-bold">
+                      محادثة جديدة
+                    </span>
+                    <Button
+                      onClick={handleCloseNewConversation}
+                      variant="ghost"
+                      size="sm"
+                      className="w-6 h-6 p-0 hover:bg-red-100 hover:text-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                    <Avatar className="w-12 h-12 ring-2 ring-purple-200/50">
+                      <AvatarImage src={initialTargetUser.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-400 text-white font-bold">
+                        {initialTargetUser.full_name?.charAt(0) || '؟'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 text-lg">
+                        {initialTargetUser.full_name || initialTargetUser.username}
+                      </h3>
+                      <p className="text-sm text-purple-600 font-medium">ابدأ محادثة جديدة</p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-purple-500" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {filteredConversations.length === 0 && !showNewConversation ? (
               <div className="p-6 text-center text-gray-500">
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="w-8 h-8 text-gray-300" />
@@ -132,7 +194,7 @@ export const MessagingPanel: React.FC = () => {
                     key={conversation.user.id}
                     onClick={() => handleSelectConversation(conversation.user.id)}
                     className={`p-4 m-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                      selectedConversationId === conversation.user.id
+                      selectedConversationId === conversation.user.id && !showNewConversation
                         ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-2 border-purple-300/60 shadow-xl scale-[1.02] transform'
                         : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 hover:scale-[1.01] transform'
                     }`}
@@ -189,14 +251,16 @@ export const MessagingPanel: React.FC = () => {
                     <Avatar className="w-12 h-12 ring-2 ring-purple-200/50">
                       <AvatarImage src={selectedUser.avatar_url} />
                       <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-400 text-white font-semibold">
-                        {selectedUser.full_name?.charAt(0) || '؟'}
+                        {selectedUser.full_name?.charAt(0) || '？'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <h3 className="font-bold text-gray-900 text-lg">
                         {selectedUser.full_name || selectedUser.username}
                       </h3>
-                      <p className="text-sm text-green-600 font-medium">متصل الآن</p>
+                      <p className="text-sm text-green-600 font-medium">
+                        {showNewConversation ? 'محادثة جديدة' : 'متصل الآن'}
+                      </p>
                     </div>
                   </div>
                   
@@ -231,40 +295,55 @@ export const MessagingPanel: React.FC = () => {
               {/* الرسائل */}
               <ScrollArea className="flex-1 p-6 bg-gradient-to-br from-gray-50/30 to-blue-50/20">
                 <div className="space-y-4">
-                  {currentMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className="flex items-end space-x-2 rtl:space-x-reverse max-w-[70%]">
-                        {message.sender_id !== user.id && (
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={message.sender.avatar_url} />
-                            <AvatarFallback className="bg-gray-300 text-xs">
-                              {message.sender.full_name?.charAt(0) || '؟'}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={`px-4 py-3 rounded-2xl shadow-lg ${
-                            message.sender_id === user.id
-                              ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-br-md'
-                              : 'bg-white text-gray-900 border border-gray-200/50 rounded-bl-md'
-                          }`}
-                        >
-                          <p className="text-sm leading-relaxed">{message.content}</p>
-                          <p className={`text-xs mt-2 ${
-                            message.sender_id === user.id ? 'text-purple-100' : 'text-gray-500'
-                          }`}>
-                            {new Date(message.created_at).toLocaleTimeString('ar-SA', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
+                  {showNewConversation && currentMessages.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare className="w-8 h-8 text-purple-500" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-700 mb-2">محادثة جديدة</h3>
+                      <p className="text-gray-500 mb-4">ابدأ محادثتك الأولى مع {selectedUser.full_name || selectedUser.username}</p>
+                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-2xl border border-purple-200/30 max-w-md mx-auto">
+                        <p className="text-sm text-gray-600">
+                          💬 اكتب رسالتك الأولى أدناه لبدء المحادثة
+                        </p>
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    currentMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className="flex items-end space-x-2 rtl:space-x-reverse max-w-[70%]">
+                          {message.sender_id !== user.id && (
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage src={message.sender.avatar_url} />
+                              <AvatarFallback className="bg-gray-300 text-xs">
+                                {message.sender.full_name?.charAt(0) || '？'}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div
+                            className={`px-4 py-3 rounded-2xl shadow-lg ${
+                              message.sender_id === user.id
+                                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-br-md'
+                                : 'bg-white text-gray-900 border border-gray-200/50 rounded-bl-md'
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                            <p className={`text-xs mt-2 ${
+                              message.sender_id === user.id ? 'text-purple-100' : 'text-gray-500'
+                            }`}>
+                              {new Date(message.created_at).toLocaleTimeString('ar-SA', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
@@ -286,7 +365,7 @@ export const MessagingPanel: React.FC = () => {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="اكتب رسالتك هنا..."
+                      placeholder={showNewConversation ? `اكتب رسالة إلى ${selectedUser.full_name || selectedUser.username}...` : "اكتب رسالتك هنا..."}
                       className="pr-12 rounded-full border-2 border-gray-200/50 focus:border-purple-300 bg-white/80 backdrop-blur-sm text-right"
                     />
                     <Button
