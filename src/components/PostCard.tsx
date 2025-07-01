@@ -15,6 +15,8 @@ interface Post {
   };
   content: string;
   image?: string;
+  video?: string;
+  media_type?: 'text' | 'image' | 'video';
   likes: number;
   comments: number;
   timeAgo: string;
@@ -84,13 +86,27 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare, onPro
 
         <p className="text-gray-800 mb-4 leading-relaxed">{post.content}</p>
 
-        {post.image && (
+        {/* Media Content */}
+        {post.image && post.media_type === 'image' && (
           <div className="mb-4 rounded-xl overflow-hidden">
             <img
               src={post.image}
               alt="Post content"
               className="w-full h-80 object-cover hover:scale-105 transition-transform duration-300"
             />
+          </div>
+        )}
+
+        {post.video && post.media_type === 'video' && (
+          <div className="mb-4 rounded-xl overflow-hidden">
+            <video
+              src={post.video}
+              controls
+              className="w-full h-80 object-cover"
+              preload="metadata"
+            >
+              متصفحك لا يدعم تشغيل الفيديو
+            </video>
           </div>
         )}
 

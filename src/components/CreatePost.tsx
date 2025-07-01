@@ -1,30 +1,32 @@
 
 import React, { useState } from 'react';
 import { User, Image, Video, FileText, Download, Upload, X, Sparkles, Camera } from 'lucide-react';
-import { ImageUploader } from './ImageUploader';
+import { MediaUploader } from './MediaUploader';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreatePostProps {
-  onPost: (content: string, image?: string, type?: 'text' | 'image' | 'reel') => void;
+  onPost: (content: string, mediaUrl?: string, mediaType?: 'text' | 'image' | 'video') => void;
 }
 
 export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
   const [content, setContent] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [postType, setPostType] = useState<'text' | 'image' | 'reel'>('text');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState<'text' | 'image' | 'video'>('text');
+  const [postType, setPostType] = useState<'text' | 'image' | 'video'>('text');
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (content.trim() || imageUrl) {
-      onPost(content, imageUrl || undefined, postType);
+    if (content.trim() || mediaUrl) {
+      onPost(content, mediaUrl || undefined, mediaType);
       setContent('');
-      setImageUrl('');
+      setMediaUrl('');
+      setMediaType('text');
       setPostType('text');
       setIsExpanded(false);
       
@@ -35,28 +37,30 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
     }
   };
 
-  const handleImageUpload = (url: string) => {
-    setImageUrl(url);
-    setPostType('image');
+  const handleMediaUpload = (url: string, type: 'image' | 'video') => {
+    setMediaUrl(url);
+    setMediaType(type);
+    setPostType(type);
   };
 
-  const removeImage = () => {
-    setImageUrl('');
+  const removeMedia = () => {
+    setMediaUrl('');
+    setMediaType('text');
     setPostType('text');
   };
 
-  const downloadImage = () => {
-    if (imageUrl) {
+  const downloadMedia = () => {
+    if (mediaUrl) {
       const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = 'veloxa-image.jpg';
+      link.href = mediaUrl;
+      link.download = `veloxa-${mediaType}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
       toast({
-        title: "تم تحميل الصورة ✅",
-        description: "تم تحميل الصورة بنجاح على جهازك",
+        title: `تم تحميل ${mediaType === 'video' ? 'الفيديو' : 'الصورة'} ✅`,
+        description: `تم تحميل ${mediaType === 'video' ? 'الفيديو' : 'الصورة'} بنجاح على جهازك`,
       });
     }
   };
@@ -77,9 +81,9 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
       hoverColor: 'hover:from-green-600 hover:to-emerald-600'
     },
     { 
-      type: 'reel' as const, 
+      type: 'video' as const, 
       icon: Video, 
-      label: 'ريل', 
+      label: 'فيديو', 
       color: 'from-purple-500 to-pink-500',
       hoverColor: 'hover:from-purple-600 hover:to-pink-600'
     },
@@ -137,92 +141,94 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
               placeholder={
                 postType === 'text' ? "شارك أفكارك مع مجتمع Veloxa..." :
                 postType === 'image' ? "اكتب تعليقاً رائعاً على صورتك..." :
-                "اكتب وصفاً مميزاً للريل..."
+                "اكتب وصفاً مميزاً للفيديو..."
               }
               className="w-full min-h-[120px] border-2 border-gray-200 rounded-2xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-lg placeholder-gray-400 bg-gray-50/50 backdrop-blur-sm transition-all duration-300"
               onFocus={() => setIsExpanded(true)}
             />
           </div>
 
-          {/* Image Upload Section - Enhanced */}
-          {postType === 'image' && (
+          {/* Media Upload Section - Enhanced */}
+          {(postType === 'image' || postType === 'video') && (
             <div className="mb-6">
-              {!imageUrl ? (
+              {!mediaUrl ? (
                 <div className="border-3 border-dashed border-gradient-to-r from-purple-300 to-blue-300 rounded-2xl p-8 text-center hover:border-purple-400 transition-all duration-300 bg-gradient-to-br from-purple-50/50 to-blue-50/50 backdrop-blur-sm">
                   {user && (
-                    <ImageUploader
-                      onImageUpload={handleImageUpload}
-                      bucket="posts"
+                    <MediaUploader
+                      onMediaUpload={handleMediaUpload}
+                      bucket={postType === 'video' ? 'videos' : 'posts'}
                       userId={user.id}
                       className="w-full"
+                      allowVideo={postType === 'video'}
                     >
                       <div className="flex flex-col items-center space-y-4">
                         <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center">
-                          <Upload className="w-8 h-8 text-white" />
+                          {postType === 'video' ? (
+                            <Video className="w-8 h-8 text-white" />
+                          ) : (
+                            <Upload className="w-8 h-8 text-white" />
+                          )}
                         </div>
                         <div>
-                          <p className="text-lg font-semibold text-gray-700 mb-1">اضغط لرفع صورة مميزة</p>
-                          <p className="text-sm text-gray-500">PNG, JPG, GIF حتى 5MB</p>
+                          <p className="text-lg font-semibold text-gray-700 mb-1">
+                            اضغط لرفع {postType === 'video' ? 'فيديو مميز' : 'صورة مميزة'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {postType === 'video' ? 'MP4, MOV, AVI حتى 50MB' : 'PNG, JPG, GIF حتى 5MB'}
+                          </p>
                         </div>
                       </div>
-                    </ImageUploader>
+                    </MediaUploader>
                   )}
                 </div>
               ) : (
                 <div className="relative group">
-                  <img
-                    src={imageUrl}
-                    alt="Uploaded"
-                    className="w-full max-h-96 object-cover rounded-2xl shadow-lg"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={downloadImage}
-                        className="bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg"
-                      >
-                        <Download className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="bg-red-500/90 hover:bg-red-600 text-white p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+                  {mediaType === 'video' ? (
+                    <video
+                      src={mediaUrl}
+                      controls
+                      className="w-full max-h-96 object-cover rounded-2xl shadow-lg"
+                    />
+                  ) : (
+                    <img
+                      src={mediaUrl}
+                      alt="Uploaded"
+                      className="w-full max-h-96 object-cover rounded-2xl shadow-lg"
+                    />
+                  )}
+                  <div className="absolute top-4 right-4 flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={downloadMedia}
+                      className="bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg"
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={removeMedia}
+                      className="bg-red-500/90 hover:bg-red-600 text-white p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Reel Section - Enhanced */}
-          {postType === 'reel' && (
-            <div className="mb-6">
-              <div className="border-3 border-dashed border-purple-300 rounded-2xl p-8 text-center bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Video className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-purple-700 mb-2">ميزة الريلز قريباً! 🎬</h3>
-                <p className="text-purple-600">سيتم إضافة دعم تحميل الفيديوهات قريباً في Veloxa</p>
-              </div>
-            </div>
-          )}
-
           {/* Action Buttons - Enhanced */}
-          {(isExpanded || content.trim() || imageUrl) && (
+          {(isExpanded || content.trim() || mediaUrl) && (
             <div className="flex justify-between items-center pt-6 border-t border-gray-100">
               <div className="flex items-center space-x-3">
-                {imageUrl && (
+                {mediaUrl && (
                   <button
                     type="button"
-                    onClick={downloadImage}
+                    onClick={downloadMedia}
                     className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all duration-200"
                   >
                     <Download className="w-4 h-4" />
-                    <span>تحميل الصورة</span>
+                    <span>تحميل {mediaType === 'video' ? 'الفيديو' : 'الصورة'}</span>
                   </button>
                 )}
               </div>
@@ -232,7 +238,8 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
                   type="button"
                   onClick={() => {
                     setContent('');
-                    setImageUrl('');
+                    setMediaUrl('');
+                    setMediaType('text');
                     setPostType('text');
                     setIsExpanded(false);
                   }}
@@ -242,10 +249,10 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPost }) => {
                 </button>
                 <Button
                   type="submit"
-                  disabled={!content.trim() && !imageUrl}
+                  disabled={!content.trim() && !mediaUrl}
                   className="bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 text-white px-8 py-3 rounded-xl font-medium hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl"
                 >
-                  {postType === 'reel' ? '🎬 نشر الريل' : '✨ نشر في Veloxa'}
+                  {postType === 'video' ? '🎬 نشر الفيديو' : '✨ نشر في Veloxa'}
                 </Button>
               </div>
             </div>

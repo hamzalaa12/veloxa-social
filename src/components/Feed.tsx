@@ -58,20 +58,22 @@ export const Feed: React.FC<FeedProps> = ({ onProfileClick }) => {
         posts.map((post) => (
           <PostCard
             key={post.id}
-            post={{
-              id: post.id,
-              user: {
-                name: post.profiles.full_name || post.profiles.username,
-                username: `@${post.profiles.username}`,
-                avatar: post.profiles.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-              },
-              content: post.content,
-              image: post.image_url,
-              likes: post.likes_count || 0,
-              comments: post.comments_count || 0,
-              timeAgo: new Date(post.created_at).toLocaleDateString('ar'),
-              liked: post.user_liked || false
-            }}
+             post={{
+               id: post.id,
+               user: {
+                 name: post.profiles.full_name || post.profiles.username,
+                 username: `@${post.profiles.username}`,
+                 avatar: post.profiles.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+               },
+               content: post.content,
+               image: post.image_url,
+               video: post.video_url,
+               media_type: post.media_type,
+               likes: post.likes_count || 0,
+               comments: post.comments_count || 0,
+               timeAgo: new Date(post.created_at).toLocaleDateString('ar'),
+               liked: post.user_liked || false
+             }}
             onLike={() => toggleLike(post.id)}
             onShare={() => handleShare(post.id)}
             onProfileClick={onProfileClick}

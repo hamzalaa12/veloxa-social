@@ -8,6 +8,8 @@ export interface Post {
   id: string;
   content: string;
   image_url?: string;
+  video_url?: string;
+  media_type: 'text' | 'image' | 'video';
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -57,12 +59,17 @@ export const usePosts = () => {
         
         const postsWithLikes = data.map(post => ({
           ...post,
+          media_type: (post.media_type || 'text') as 'text' | 'image' | 'video',
           user_liked: likedPostIds.has(post.id)
         }));
 
-        setPosts(postsWithLikes);
+        setPosts(postsWithLikes as Post[]);
       } else {
-        setPosts(data || []);
+        const formattedData = (data || []).map(post => ({
+          ...post,
+          media_type: (post.media_type || 'text') as 'text' | 'image' | 'video'
+        }));
+        setPosts(formattedData as Post[]);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -76,24 +83,32 @@ export const usePosts = () => {
     }
   };
 
-  const createPost = async (content: string, imageUrl?: string) => {
+  const createPost = async (content: string, mediaUrl?: string, mediaType: 'text' | 'image' | 'video' = 'text') => {
     if (!user) return;
 
     try {
+      const postData: any = {
+        content,
+        user_id: user.id,
+        media_type: mediaType
+      };
+
+      if (mediaType === 'image') {
+        postData.image_url = mediaUrl;
+      } else if (mediaType === 'video') {
+        postData.video_url = mediaUrl;
+      }
+
       const { error } = await supabase
         .from('posts')
-        .insert({
-          content,
-          image_url: imageUrl,
-          user_id: user.id
-        });
+        .insert(postData);
 
       if (error) throw error;
 
       fetchPosts(); // Refresh posts
       toast({
         title: "تم نشر المنشور بنجاح!",
-        description: "تم إضافة منشورك الجديد"
+        description: `تم إضافة ${mediaType === 'video' ? 'الفيديو' : mediaType === 'image' ? 'الصورة' : 'المنشور'} الجديد`
       });
     } catch (error) {
       console.error('Error creating post:', error);
