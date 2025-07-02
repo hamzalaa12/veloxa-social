@@ -23,10 +23,11 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user && activeView !== 'feed') {
-      navigate('/auth');
+    if (!loading && !user) {
+      // Redirect non-authenticated users to landing page
+      navigate('/landing');
     }
-  }, [user, loading, activeView, navigate]);
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -80,16 +81,21 @@ const Index = () => {
 
   if (loading || profileCheckLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[image:var(--gradient-accent)] flex items-center justify-center">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-6"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-blue-500/20 border-b-blue-500 rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          <div className="relative mb-8">
+            <div className="w-24 h-24 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-primary-glow/20 border-b-primary-glow rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-3xl font-bold bg-[image:var(--gradient-primary)] bg-clip-text text-transparent mb-3">
             Veloxa
           </h2>
-          <p className="text-gray-600 font-medium">جاري تحميل شبكة التواصل الذكية...</p>
+          <p className="text-muted-foreground font-medium text-lg">جاري تحميل شبكة التواصل الذكية...</p>
+          <div className="mt-8 flex justify-center space-x-1 space-x-reverse">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -100,7 +106,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-blue-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-[image:var(--gradient-accent)]">
       <Header 
         onViewChange={setActiveView} 
         activeView={activeView} 

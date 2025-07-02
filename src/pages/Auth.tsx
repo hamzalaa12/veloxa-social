@@ -66,13 +66,13 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-[image:var(--gradient-accent)] flex items-center justify-center p-4">
+      <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-[var(--shadow-elegant)] p-8 w-full max-w-md border-0">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            SocialGrid
+          <h1 className="text-4xl font-bold bg-[image:var(--gradient-primary)] bg-clip-text text-transparent mb-3">
+            Veloxa
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground text-lg">
             {isSignUp ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
           </p>
         </div>
