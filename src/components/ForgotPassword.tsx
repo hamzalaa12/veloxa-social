@@ -33,28 +33,26 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
     setLoading(true);
 
     try {
-      // Generate a demo code for testing purposes
-      const demoCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSimulatedCode(demoCode);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const tempUserId = 'temp-id';
-      setUserId(tempUserId);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?mode=reset`
+      });
+
+      if (error) {
+        throw error;
+      }
       
       toast({
-        title: "تم إرسال رمز التحقق",
-        description: `لأغراض التجربة، استخدم الرمز: ${demoCode}`,
-        duration: 10000
+        title: "تم إرسال رابط إعادة تعيين كلمة المرور",
+        description: "يرجى التحقق من بريدك الإلكتروني واتباع الرابط المرسل"
       });
       
-      setStep('code');
+      // Close the modal after successful email send
+      handleClose();
     } catch (error) {
-      console.error('Error sending reset code:', error);
+      console.error('Error sending reset email:', error);
       toast({
-        title: "خطأ في إرسال الرمز",
-        description: "يرجى المحاولة مرة أخرى",
+        title: "خطأ في إرسال البريد الإلكتروني",
+        description: error.message || "يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {
@@ -177,18 +175,6 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose 
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Demo Notice */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-start space-x-3 space-x-reverse">
-              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold text-blue-800 mb-1">وضع التجربة</p>
-                <p className="text-blue-700">
-                  هذا نظام تجريبي. سيظهر رمز التحقق في الإشعار بدلاً من إرساله عبر البريد الإلكتروني.
-                </p>
-              </div>
-            </div>
-          </div>
 
           {step === 'email' && (
             <form onSubmit={handleSendCode} className="space-y-6">
